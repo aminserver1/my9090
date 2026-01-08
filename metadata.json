@@ -1,0 +1,8 @@
+{
+  "name": "Kuchat",
+  "description": "A high-performance Kurdish chat application with rooms, premium features, coins, and admin control.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
