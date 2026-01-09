@@ -4,11 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kuchat</title>
+    <title>Kuchat - ئەپی چاتی کوردی</title>
+    
+    <!-- Scripts for React and Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Icons and Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700&display=swap');
+        
         body {
             font-family: 'Vazirmatn', sans-serif;
             background-color: #0f172a;
@@ -16,23 +24,36 @@
             margin: 0;
             padding: 0;
             overflow-x: hidden;
+            height: 100vh;
         }
+
         .glass {
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         ::-webkit-scrollbar {
             width: 6px;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #334155;
             border-radius: 10px;
         }
+
         .premium-border {
             border: 2px solid transparent;
             background: linear-gradient(#1e293b, #1e293b) padding-box,
                         linear-gradient(to right, #3b82f6, #8b5cf6) border-box;
+        }
+
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(-5%); }
+            50% { transform: translateY(0); }
+        }
+        .animate-bounce-slow {
+            animation: bounce-slow 2s infinite;
         }
     </style>
 <script type="importmap">
@@ -47,6 +68,349 @@
 </head>
 <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Constants ---
+        const ADMIN_EMAIL = 'kuchat60111@gmail.com';
+        const PREMIUM_COST = 10000;
+        const NEW_ROOM_COST = 1000;
+        const AD_COST = 5000;
+        const TELEGRAM_OWNER = 'https://t.me/Anatoly_Programmer601';
+        const DEFAULT_AVATAR = 'https://picsum.photos/seed/user/200';
+        const DEFAULT_ROOM_IMAGE = 'https://picsum.photos/seed/room/400/300';
+        const STORAGE_KEY = 'kuchat_v1_db';
+
+        const COIN_PACKS = [
+            { coins: 1000, price: '1,000 IQD' },
+            { coins: 5000, price: '5,000 IQD' },
+            { coins: 10000, price: '10,000 IQD' },
+            { coins: 50000, price: '50,000 IQD' },
+            { coins: 100000, price: '100,000 IQD' },
+        ];
+
+        // --- Mock Database Service ---
+        const initialDb = {
+            users: {},
+            rooms: {
+                'official-admin': {
+                    id: 'official-admin',
+                    name: 'ڕوومی فەرمی ئەدمینەکان',
+                    description: 'گرووپی فەرمی بۆ گفتوگۆی ئەدمین و ڕێنماییەکان',
+                    ownerId: 'system',
+                    ownerName: 'Kuchat Admin',
+                    photoURL: 'https://picsum.photos/seed/official/400/300',
+                    createdAt: Date.now(),
+                    isPinned: true,
+                    isOfficial: true
+                }
+            },
+            messages: { 'official-admin': [] },
+            notifications: []
+        };
+
+        const getDb = () => {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : initialDb;
+        };
+
+        const saveDb = (db) => {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+        };
+
+        const dbService = {
+            register: (email, pass, name) => {
+                const db = getDb();
+                const uid = Math.random().toString(36).substring(7);
+                const isAdmin = email === ADMIN_EMAIL;
+                const user = {
+                    uid, email, displayName: name, photoURL: '',
+                    coins: isAdmin ? 999999 : 0, isPremium: isAdmin, isAdmin,
+                    lastActive: Date.now(), roomsCreatedCount: 0
+                };
+                db.users[uid] = user;
+                saveDb(db);
+                return user;
+            },
+            login: (email) => {
+                const db = getDb();
+                const user = Object.values(db.users).find(u => u.email === email);
+                if (user) {
+                    user.lastActive = Date.now();
+                    saveDb(db);
+                    return user;
+                }
+                return null;
+            },
+            updateUser: (uid, data) => {
+                const db = getDb();
+                if (db.users[uid]) {
+                    db.users[uid] = { ...db.users[uid], ...data };
+                    saveDb(db);
+                }
+            },
+            getRooms: () => {
+                const db = getDb();
+                return Object.values(db.rooms).sort((a, b) => {
+                    if (a.isPinned && !b.isPinned) return -1;
+                    if (!a.isPinned && b.isPinned) return 1;
+                    return b.createdAt - a.createdAt;
+                });
+            },
+            createRoom: (room) => {
+                const db = getDb();
+                const id = Math.random().toString(36).substring(7);
+                const newRoom = { ...room, id, createdAt: Date.now(), isPinned: false };
+                db.rooms[id] = newRoom;
+                db.messages[id] = [];
+                saveDb(db);
+                return newRoom;
+            },
+            updateRoom: (roomId, data) => {
+                const db = getDb();
+                if (db.rooms[roomId]) {
+                    db.rooms[roomId] = { ...db.rooms[roomId], ...data };
+                    saveDb(db);
+                }
+            },
+            getMessages: (roomId) => getDb().messages[roomId] || [],
+            sendMessage: (roomId, message) => {
+                const db = getDb();
+                const newMessage = { ...message, id: Math.random().toString(36).substring(7), timestamp: Date.now() };
+                if (!db.messages[roomId]) db.messages[roomId] = [];
+                db.messages[roomId].push(newMessage);
+                saveDb(db);
+                return newMessage;
+            },
+            getNotifications: () => getDb().notifications,
+            addNotification: (notif) => {
+                const db = getDb();
+                db.notifications.unshift({ ...notif, id: Date.now().toString(), timestamp: Date.now() });
+                saveDb(db);
+            },
+            getOnlineUsers: () => {
+                const db = getDb();
+                const now = Date.now();
+                return Object.values(db.users).map(u => ({
+                    ...u, isOnline: (now - u.lastActive) < 60000
+                }));
+            }
+        };
+
+        // --- Components ---
+
+        const Layout = ({ children, title, onBack, hideNav, activeTab, onTabChange }) => (
+            <div className="flex flex-col h-screen max-w-md mx-auto bg-slate-900 overflow-hidden relative shadow-2xl">
+                {title && (
+                    <header className="h-16 glass flex items-center justify-between px-4 z-20 shrink-0">
+                        <div className="flex items-center gap-3">
+                            {onBack && (
+                                <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-700">
+                                    <i className="fas fa-chevron-right"></i>
+                                </button>
+                            )}
+                            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">{title}</h1>
+                        </div>
+                        <div className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800">
+                            <i className="fas fa-comment-dots text-blue-400"></i>
+                        </div>
+                    </header>
+                )}
+                <main className="flex-1 overflow-y-auto pb-20">{children}</main>
+                {!hideNav && (
+                    <nav className="h-16 glass absolute bottom-0 left-0 right-0 flex items-center justify-around px-4 z-20 border-t border-slate-700">
+                        {[
+                            { id: 'home', icon: 'fa-home', label: 'سەرەکی' },
+                            { id: 'notifications', icon: 'fa-bell', label: 'ئاگاداری' },
+                            { id: 'store', icon: 'fa-coins', label: 'کۆین' },
+                            { id: 'profile', icon: 'fa-user', label: 'پڕۆفایل' }
+                        ].map(tab => (
+                            <button key={tab.id} onClick={() => onTabChange(tab.id)} className={`flex flex-col items-center gap-1 ${activeTab === tab.id ? 'text-blue-400' : 'text-slate-400'}`}>
+                                <i className={`fas ${tab.icon}`}></i>
+                                <span className="text-[10px]">{tab.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                )}
+            </div>
+        );
+
+        const ChatScreen = ({ room, user, onBack }) => {
+            const [messages, setMessages] = useState(dbService.getMessages(room.id));
+            const [input, setInput] = useState('');
+            const [showMembers, setShowMembers] = useState(false);
+            const scrollRef = useRef(null);
+
+            useEffect(() => {
+                const interval = setInterval(() => setMessages(dbService.getMessages(room.id)), 2000);
+                return () => clearInterval(interval);
+            }, [room.id]);
+
+            useEffect(() => {
+                if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }, [messages]);
+
+            const send = () => {
+                if (!input.trim()) return;
+                dbService.sendMessage(room.id, {
+                    senderId: user.uid, senderName: user.displayName,
+                    senderPhoto: user.photoURL || DEFAULT_AVATAR,
+                    isPremiumSender: user.isPremium, text: input, type: 'text'
+                });
+                setInput('');
+                setMessages(dbService.getMessages(room.id));
+            };
+
+            return (
+                <div className="absolute inset-0 bg-slate-900 z-50 flex flex-col h-full overflow-hidden">
+                    <header className="h-16 glass flex items-center justify-between px-4 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <button onClick={onBack} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-700"><i className="fas fa-chevron-right"></i></button>
+                            <img src={room.photoURL} className="w-10 h-10 rounded-full object-cover" />
+                            <div>
+                                <h4 className="text-sm font-bold truncate w-32">{room.name}</h4>
+                                <button onClick={() => setShowMembers(true)} className="text-[10px] text-blue-400">بینینی ئەندامەکان</button>
+                            </div>
+                        </div>
+                    </header>
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {messages.map((m) => (
+                            <div key={m.id} className={`flex gap-3 ${m.senderId === user.uid ? 'flex-row-reverse' : ''}`}>
+                                <img src={m.senderPhoto} className="w-8 h-8 rounded-full shrink-0" />
+                                <div className={`max-w-[75%] ${m.senderId === user.uid ? 'items-end' : 'items-start'} flex flex-col`}>
+                                    <div className="flex items-center gap-1 mb-1">
+                                        <span className="text-[10px] font-bold text-slate-400">{m.senderName}</span>
+                                        {m.isPremiumSender && <i className="fas fa-check-circle text-blue-400 text-[10px]"></i>}
+                                    </div>
+                                    <div className={`p-3 rounded-2xl text-sm ${m.senderId === user.uid ? 'bg-blue-600 rounded-tr-none' : 'glass rounded-tl-none'}`}>
+                                        {m.text}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-4 glass shrink-0 flex items-center gap-2">
+                        <input className="flex-1 bg-slate-800 rounded-full px-4 h-10 outline-none text-sm" placeholder="بنوسە..." value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} />
+                        <button onClick={send} className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center"><i className="fas fa-paper-plane text-white"></i></button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App ---
+
+        const App = () => {
+            const [screen, setScreen] = useState('splash');
+            const [user, setUser] = useState(null);
+            const [activeRoom, setActiveRoom] = useState(null);
+            const [activeTab, setActiveTab] = useState('home');
+            
+            // Auth States
+            const [email, setEmail] = useState('');
+            const [pass, setPass] = useState('');
+            const [name, setName] = useState('');
+            const [isReg, setIsReg] = useState(false);
+
+            useEffect(() => {
+                setTimeout(() => {
+                    const saved = localStorage.getItem('kuchat_session');
+                    if (saved) {
+                        const u = dbService.login(saved);
+                        if (u) { setUser(u); setScreen('home'); } else setScreen('auth');
+                    } else setScreen('auth');
+                }, 2000);
+            }, []);
+
+            const handleAuth = () => {
+                if (isReg) {
+                    const u = dbService.register(email, pass, name);
+                    setUser(u); localStorage.setItem('kuchat_session', email); setScreen('home');
+                } else {
+                    const u = dbService.login(email);
+                    if (u) { setUser(u); localStorage.setItem('kuchat_session', email); setScreen('home'); }
+                    else alert('ئەو ئیمێڵە نییە');
+                }
+            };
+
+            if (screen === 'splash') return (
+                <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-900">
+                    <div className="w-32 h-32 rounded-3xl bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center shadow-2xl animate-bounce-slow mb-8">
+                        <i className="fas fa-comment-dots text-5xl text-white"></i>
+                    </div>
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Kuchat</h1>
+                </div>
+            );
+
+            if (screen === 'auth') return (
+                <div className="h-screen w-screen max-w-md mx-auto bg-slate-900 p-8 flex flex-col justify-center">
+                    <h2 className="text-3xl font-bold text-center mb-8">{isReg ? 'تۆمارکردن' : 'چوونە ژوورەوە'}</h2>
+                    <div className="space-y-4">
+                        {isReg && <input className="w-full h-14 bg-slate-800 rounded-2xl px-6 outline-none text-white" placeholder="ناو" value={name} onChange={e => setName(e.target.value)} />}
+                        <input className="w-full h-14 bg-slate-800 rounded-2xl px-6 outline-none text-white" placeholder="ئیمێڵ" value={email} onChange={e => setEmail(e.target.value)} />
+                        <input type="password" className="w-full h-14 bg-slate-800 rounded-2xl px-6 outline-none text-white" placeholder="ڕەمز" value={pass} onChange={e => setPass(e.target.value)} />
+                        <button onClick={handleAuth} className="w-full h-14 bg-blue-600 rounded-2xl font-bold">{isReg ? 'دروستکردن' : 'بچۆرە ژوورەوە'}</button>
+                        <button onClick={() => setIsReg(!isReg)} className="w-full text-blue-400 text-sm">{isReg ? 'ئەکاونتم هەیە' : 'ئەکاونتم نییە'}</button>
+                    </div>
+                </div>
+            );
+
+            return (
+                <Layout title="Kuchat" activeTab={activeTab} onTabChange={(t) => { setActiveTab(t); setScreen(t); }}>
+                    {screen === 'home' && (
+                        <div className="p-4 space-y-4">
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="bg-slate-800 px-4 py-2 rounded-full border border-slate-700 flex gap-2">
+                                    <i className="fas fa-coins text-yellow-500"></i>
+                                    <span className="font-bold">{user?.coins}</span>
+                                </div>
+                            </div>
+                            <h3 className="text-lg font-bold">ژوورەکان</h3>
+                            <div className="space-y-3">
+                                {dbService.getRooms().map(room => (
+                                    <div key={room.id} onClick={() => { setActiveRoom(room); setScreen('chat'); }} className="glass p-3 rounded-2xl flex items-center gap-4 cursor-pointer">
+                                        <img src={room.photoURL} className="w-12 h-12 rounded-xl object-cover" />
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-sm">{room.name}</h4>
+                                            <p className="text-[10px] text-slate-500">{room.description}</p>
+                                        </div>
+                                        <i className="fas fa-chevron-left text-slate-600"></i>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {screen === 'chat' && activeRoom && <ChatScreen room={activeRoom} user={user} onBack={() => setScreen('home')} />}
+                    {screen === 'store' && (
+                        <div className="p-6 space-y-6 text-center">
+                            <h2 className="text-xl font-bold">کۆگا</h2>
+                            <div className="grid grid-cols-2 gap-4">
+                                {COIN_PACKS.map(p => (
+                                    <div key={p.coins} className="glass p-4 rounded-2xl">
+                                        <i className="fas fa-coins text-yellow-500 mb-2"></i>
+                                        <div className="font-bold">{p.coins}</div>
+                                        <div className="text-[10px] text-blue-400">{p.price}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={() => window.open(TELEGRAM_OWNER)} className="w-full h-12 bg-blue-600 rounded-xl font-bold">پەیوەندی بە پڕۆگرامەر</button>
+                        </div>
+                    )}
+                    {screen === 'profile' && (
+                        <div className="p-8 flex flex-col items-center">
+                            <img src={DEFAULT_AVATAR} className="w-24 h-24 rounded-3xl mb-4 border-4 border-slate-800" />
+                            <h2 className="text-2xl font-bold">{user?.displayName}</h2>
+                            <p className="text-slate-500 mb-8">{user?.email}</p>
+                            <button onClick={() => { localStorage.removeItem('kuchat_session'); setScreen('auth'); }} className="w-full h-12 bg-red-500/10 text-red-500 rounded-xl font-bold">چوونە دەرەوە</button>
+                        </div>
+                    )}
+                    {screen === 'notifications' && <div className="p-8 text-center text-slate-500">هیچ ئاگاداریەک نییە</div>}
+                </Layout>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
