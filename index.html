@@ -103,12 +103,31 @@
 
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .notif-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            font-size: 9px;
+            font-weight: 800;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #020617;
+            animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-2px); } }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react": "https://esm.sh/react@^18.2.0",
+    "react-dom/": "https://esm.sh/react-dom@^18.2.0/",
     "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
@@ -187,6 +206,7 @@
             const [tab, setTab] = useState('home');
             const [activeRoom, setActiveRoom] = useState(null);
             const [lang, setLang] = useState('en');
+            const [notifCount, setNotifCount] = useState(0);
 
             useEffect(() => {
                 const unsub = auth.onAuthStateChanged(async (u) => {
@@ -198,6 +218,11 @@
                                 if (data.lang) setLang(data.lang);
                             }
                         });
+                        
+                        db.ref('notifications').on('value', snap => {
+                            setNotifCount(snap.numChildren());
+                        });
+                        
                         setView('main');
                     } else {
                         setTimeout(() => setView('auth'), 2000);
@@ -239,11 +264,19 @@
                 <div className={`h-full max-w-md mx-auto bg-slate-950 flex flex-col relative border-x border-slate-900 shadow-2xl overflow-hidden ${lang === 'en' ? 'ltr' : 'rtl'}`}>
                     <header className="h-20 glass flex items-center justify-between px-6 z-20 border-b border-white/5 shrink-0 safe-top">
                         <h1 className="text-xl font-bold animate-shimmer">KUCHAT</h1>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                             {user?.isAdmin && <button onClick={() => setTab('admin')} className="w-9 h-9 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center"><i className="fas fa-shield-halved text-xs"></i></button>}
-                            <div className="bg-slate-900/80 px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10">
-                                <i className="fas fa-coins text-yellow-500 text-xs"></i>
-                                <span className="text-xs font-bold">{user?.coins?.toLocaleString()}</span>
+                            
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setTab('notif')} className="relative w-9 h-9 flex items-center justify-center text-slate-400 bg-slate-900 rounded-full border border-white/5">
+                                    <i className="fas fa-bell"></i>
+                                    {notifCount > 0 && <div className="notif-badge">{notifCount}</div>}
+                                </button>
+                                
+                                <div className="bg-slate-900/80 px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10">
+                                    <i className="fas fa-coins text-yellow-500 text-xs"></i>
+                                    <span className="text-xs font-bold">{user?.coins?.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
                     </header>
@@ -259,7 +292,6 @@
                     <nav className="h-20 glass absolute bottom-0 left-0 right-0 flex items-center justify-around z-20 border-t border-white/5 safe-bottom">
                         {[
                             { id: 'home', icon: 'fa-house-user', label: t.rooms },
-                            { id: 'notif', icon: 'fa-bell', label: t.alerts },
                             { id: 'store', icon: 'fa-gem', label: t.shop },
                             { id: 'profile', icon: 'fa-circle-user', label: t.me }
                         ].map(item => (
@@ -571,7 +603,7 @@
             const send = async () => {
                 if (!ti || !ms) return;
                 await db.ref('notifications').push({ title: ti, message: ms, timestamp: Date.now() });
-                setTab('notif');
+                setTab('home'); // Redirect back to home after sending
             };
             return (
                 <div className="p-8 space-y-6 fade-in">
