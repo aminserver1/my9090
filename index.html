@@ -12,14 +12,16 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background-color: #020617; color: #f8fafc; margin: 0; padding: 0; overflow: hidden; height: 100dvh; }
         #root { height: 100%; }
         
@@ -45,6 +47,16 @@
         .chat-scroll::-webkit-scrollbar { width: 3px; }
         .chat-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 <script type="importmap">
 {
@@ -60,103 +72,76 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        // Extract hooks from Global React object to prevent "React is not defined" error
+        const { useState, useEffect, useRef } = window.React;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDirc0CpBTWr5gxtZQv4ASZv8VRPP2QT90",
+            authDomain: "kurdtoolserver.firebaseapp.com",
+            databaseURL: "https://kurdtoolserver-default-rtdb.firebaseio.com",
+            projectId: "kurdtoolserver",
+            storageBucket: "kurdtoolserver.appspot.com",
+            appId: "1:215346001086:android:8bb74d10253a878b9ddaef"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.database();
 
         const ADMIN_EMAIL = 'kuchat60111@gmail.com';
-        const STORAGE_KEY = 'kuchat_v4_db';
         const PREMIUM_COST = 10000;
         const ROOM_COST = 1000;
         const TELEGRAM = 'https://t.me/Anatoly_Programmer601';
-        const DEFAULT_ROOM_IMG = 'https://picsum.photos/seed/kuchat/400/300';
-
-        // --- Database Logic ---
-        const getDb = () => JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
-            users: {},
-            rooms: {
-                'official': { id: 'official', name: 'Official Admin Lounge', description: 'Rules and general guidance for Kuchat users.', ownerId: 'system', photoURL: DEFAULT_ROOM_IMG, isOfficial: true, createdAt: Date.now() }
-            },
-            messages: { 'official': [] },
-            notifications: []
-        };
-        const saveDb = (db) => localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-
-        const dbService = {
-            auth: (email, name, pass, isReg) => {
-                const db = getDb();
-                const lowerEmail = email.toLowerCase();
-                if (isReg) {
-                    if (Object.values(db.users).some(u => u.email === lowerEmail)) return { error: 'Email already exists' };
-                    const uid = Math.random().toString(36).substring(7);
-                    const isAdmin = lowerEmail === ADMIN_EMAIL;
-                    const user = { uid, email: lowerEmail, displayName: name, password: pass, coins: isAdmin ? 999999 : 50, isPremium: isAdmin, isAdmin, lastActive: Date.now(), photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}` };
-                    db.users[uid] = user;
-                    saveDb(db);
-                    return { user };
-                } else {
-                    const user = Object.values(db.users).find(u => u.email === lowerEmail);
-                    if (!user) return { error: 'Account not found' };
-                    if (user.password !== pass) return { error: 'Incorrect password' };
-                    user.lastActive = Date.now();
-                    saveDb(db);
-                    return { user };
-                }
-            },
-            updateUser: (uid, data) => {
-                const db = getDb();
-                if (db.users[uid]) { db.users[uid] = { ...db.users[uid], ...data }; saveDb(db); return db.users[uid]; }
-            },
-            createRoom: (uid, name, desc) => {
-                const db = getDb();
-                const id = Math.random().toString(36).substring(7);
-                db.rooms[id] = { id, name, description: desc, ownerId: uid, photoURL: DEFAULT_ROOM_IMG, createdAt: Date.now() };
-                db.messages[id] = [];
-                saveDb(db);
-            },
-            deleteRoom: (id) => {
-                const db = getDb();
-                delete db.rooms[id];
-                delete db.messages[id];
-                saveDb(db);
-            },
-            deleteMessage: (roomId, msgId) => {
-                const db = getDb();
-                if (db.messages[roomId]) {
-                    db.messages[roomId] = db.messages[roomId].filter(m => m.id !== msgId);
-                    saveDb(db);
-                }
-            },
-            deleteNotification: (id) => {
-                const db = getDb();
-                db.notifications = db.notifications.filter(n => n.id !== id);
-                saveDb(db);
-            }
-        };
 
         const App = () => {
             const [view, setView] = useState('splash');
             const [user, setUser] = useState(null);
             const [tab, setTab] = useState('home');
             const [activeRoom, setActiveRoom] = useState(null);
+            const [loading, setLoading] = useState(false);
 
             useEffect(() => {
-                const timer = setTimeout(() => {
-                    const email = localStorage.getItem('k_e');
-                    const pass = localStorage.getItem('k_p');
-                    if (email && pass) {
-                        const res = dbService.auth(email, '', pass, false);
-                        if (res.user) { setUser(res.user); setView('main'); } else setView('auth');
-                    } else setView('auth');
-                }, 2500);
-                return () => clearTimeout(timer);
+                const unsub = auth.onAuthStateChanged(async (u) => {
+                    if (u) {
+                        const snap = await db.ref(`users/${u.uid}`).once('value');
+                        const data = snap.val();
+                        setUser({ ...data, uid: u.uid });
+                        setView('main');
+                    } else {
+                        setTimeout(() => setView('auth'), 2000);
+                    }
+                });
+                return () => unsub();
             }, []);
 
-            const onAuth = (e, n, p, reg) => {
-                const res = dbService.auth(e, n, p, reg);
-                if (res.error) return alert(res.error);
-                setUser(res.user);
-                localStorage.setItem('k_e', res.user.email);
-                localStorage.setItem('k_p', res.user.password);
-                setView('main');
+            const handleAuth = async (email, name, pass, isReg) => {
+                setLoading(true);
+                try {
+                    if (isReg) {
+                        const res = await auth.createUserWithEmailAndPassword(email, pass);
+                        const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
+                        const userData = {
+                            displayName: name,
+                            email: email,
+                            coins: isAdmin ? 999999 : 50,
+                            isPremium: isAdmin,
+                            isAdmin: isAdmin,
+                            photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
+                            lastActive: Date.now()
+                        };
+                        await db.ref(`users/${res.user.uid}`).set(userData);
+                        setUser({ ...userData, uid: res.user.uid });
+                    } else {
+                        await auth.signInWithEmailAndPassword(email, pass);
+                    }
+                } catch (err) {
+                    alert(err.message);
+                } finally {
+                    setLoading(false);
+                }
             };
 
             if (view === 'splash') return (
@@ -168,58 +153,50 @@
                 </div>
             );
 
-            if (view === 'auth') return <AuthScreen onAuth={onAuth} />;
+            if (view === 'auth') return <AuthScreen onAuth={handleAuth} loading={loading} />;
 
             return (
                 <div className="h-screen max-w-md mx-auto bg-slate-950 flex flex-col relative border-x border-slate-900 shadow-2xl overflow-hidden">
-                    <Header user={user} setTab={setTab} />
+                    <header className="h-16 glass flex items-center justify-between px-6 z-20 border-b border-white/5 shrink-0">
+                        <h1 className="text-xl font-bold animate-shimmer">KUCHAT</h1>
+                        <div className="flex items-center gap-3">
+                            {user?.isAdmin && <button onClick={() => setTab('admin')} className="w-9 h-9 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center"><i className="fas fa-shield-halved text-xs"></i></button>}
+                            <div className="bg-slate-900/80 px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10">
+                                <i className="fas fa-coins text-yellow-500 text-xs"></i>
+                                <span className="text-xs font-bold">{user?.coins?.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </header>
                     
                     <main className="flex-1 overflow-y-auto pb-24">
-                        {tab === 'home' && <HomeView user={user} setView={setView} setActiveRoom={setActiveRoom} setUser={setUser} />}
-                        {tab === 'notif' && <NotifView isAdmin={user.isAdmin} />}
-                        {tab === 'store' && <StoreView user={user} setUser={setUser} />}
-                        {tab === 'profile' && <ProfileView user={user} setUser={setUser} setView={setView} />}
-                        {tab === 'admin' && user.isAdmin && <AdminView setTab={setTab} />}
+                        {tab === 'home' && <HomeView user={user} setView={setView} setActiveRoom={setActiveRoom} />}
+                        {tab === 'notif' && <NotifView isAdmin={user?.isAdmin} />}
+                        {tab === 'store' && <StoreView user={user} />}
+                        {tab === 'profile' && <ProfileView user={user} />}
+                        {tab === 'admin' && user?.isAdmin && <AdminView setTab={setTab} />}
                     </main>
 
-                    <Navbar tab={tab} setTab={setTab} />
+                    <nav className="h-20 glass absolute bottom-0 left-0 right-0 flex items-center justify-around z-20 border-t border-white/5 safe-bottom">
+                        {[
+                            { id: 'home', icon: 'fa-house-user', label: 'Rooms' },
+                            { id: 'notif', icon: 'fa-bell', label: 'Alerts' },
+                            { id: 'store', icon: 'fa-gem', label: 'Shop' },
+                            { id: 'profile', icon: 'fa-circle-user', label: 'Me' }
+                        ].map(item => (
+                            <button key={item.id} onClick={() => setTab(item.id)} className={`flex flex-col items-center gap-1 ${tab === item.id ? 'text-blue-400' : 'text-slate-500'}`}>
+                                <i className={`fas ${item.icon} text-lg`}></i>
+                                <span className="text-[10px] font-bold uppercase tracking-wider">{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
                     
-                    {view === 'chat' && <ChatView room={activeRoom} user={user} onBack={() => setView('main')} />}
-                    {view === 'create' && <CreateRoomView user={user} setUser={setUser} setView={setView} />}
+                    {view === 'chat' && activeRoom && <ChatView room={activeRoom} user={user} onBack={() => setView('main')} />}
+                    {view === 'create' && <CreateRoomView user={user} setView={setView} />}
                 </div>
             );
         };
 
-        const Header = ({ user, setTab }) => (
-            <header className="h-16 glass flex items-center justify-between px-6 z-20 border-b border-white/5 shrink-0">
-                <h1 className="text-xl font-bold animate-shimmer">KUCHAT</h1>
-                <div className="flex items-center gap-3">
-                    {user.isAdmin && <button onClick={() => setTab('admin')} className="w-9 h-9 rounded-full bg-red-500/10 text-red-500 border border-red-500/20"><i className="fas fa-shield-halved text-xs"></i></button>}
-                    <div className="bg-slate-900/80 px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10">
-                        <i className="fas fa-coins text-yellow-500 text-xs"></i>
-                        <span className="text-xs font-bold">{user.coins.toLocaleString()}</span>
-                    </div>
-                </div>
-            </header>
-        );
-
-        const Navbar = ({ tab, setTab }) => (
-            <nav className="h-20 glass absolute bottom-0 left-0 right-0 flex items-center justify-around z-20 border-t border-white/5 safe-bottom">
-                {[
-                    { id: 'home', icon: 'fa-house-user', label: 'Rooms' },
-                    { id: 'notif', icon: 'fa-bell', label: 'Alerts' },
-                    { id: 'store', icon: 'fa-gem', label: 'Shop' },
-                    { id: 'profile', icon: 'fa-circle-user', label: 'Me' }
-                ].map(item => (
-                    <button key={item.id} onClick={() => setTab(item.id)} className={`flex flex-col items-center gap-1 ${tab === item.id ? 'text-blue-400' : 'text-slate-500'}`}>
-                        <i className={`fas ${item.icon} text-lg`}></i>
-                        <span className="text-[10px] font-bold uppercase tracking-wider">{item.label}</span>
-                    </button>
-                ))}
-            </nav>
-        );
-
-        const AuthScreen = ({ onAuth }) => {
+        const AuthScreen = ({ onAuth, loading }) => {
             const [reg, setReg] = useState(false);
             const [e, setE] = useState('');
             const [n, setN] = useState('');
@@ -228,42 +205,45 @@
                 <div className="h-screen max-w-md mx-auto bg-slate-950 p-10 flex flex-col justify-center">
                     <div className="mb-12 text-center">
                         <h1 className="text-5xl font-extrabold animate-shimmer mb-4">KUCHAT</h1>
-                        <p className="text-slate-500 text-sm">{reg ? 'Join the community today' : 'Welcome back to Kuchat'}</p>
+                        <p className="text-slate-500 text-sm italic">{reg ? 'Register new account' : 'Sign in to your account'}</p>
                     </div>
                     <div className="space-y-4">
-                        {reg && <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5 focus:border-blue-500/50 transition-all" placeholder="Full Name" onChange={x=>setN(x.target.value)} />}
-                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5 focus:border-blue-500/50 transition-all" placeholder="Email Address" onChange={x=>setE(x.target.value)} />
-                        <input type="password" dir="ltr" className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5 focus:border-blue-500/50 transition-all" placeholder="Password" onChange={x=>setP(x.target.value)} />
-                        <button onClick={() => onAuth(e, n, p, reg)} className="w-full h-14 bg-blue-600 rounded-2xl font-bold text-white shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Continue</button>
-                        <button onClick={() => setReg(!reg)} className="w-full text-slate-500 text-xs font-semibold">{reg ? 'Already have an account? Login' : 'Don’t have an account? Sign Up'}</button>
+                        {reg && <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5 focus:border-blue-500/50" placeholder="Full Name" onChange={x=>setN(x.target.value)} />}
+                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5 focus:border-blue-500/50" placeholder="Email Address" onChange={x=>setE(x.target.value)} />
+                        <input type="password" dir="ltr" className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5 focus:border-blue-500/50" placeholder="Password" onChange={x=>setP(x.target.value)} />
+                        <button disabled={loading} onClick={() => onAuth(e, n, p, reg)} className="w-full h-14 bg-blue-600 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center active:scale-95 transition-all">
+                            {loading ? <div className="loader"></div> : (reg ? 'Join Kuchat' : 'Login Now')}
+                        </button>
+                        <button onClick={() => setReg(!reg)} className="w-full text-slate-500 text-xs font-semibold">{reg ? 'Already have an account? Login' : 'Need an account? Sign Up'}</button>
                     </div>
                 </div>
             );
         };
 
-        const HomeView = ({ user, setView, setActiveRoom, setUser }) => {
-            const [rooms, setRooms] = useState(dbService.getRooms());
-            useEffect(() => { const i = setInterval(() => setRooms(dbService.getRooms()), 2000); return () => clearInterval(i); }, []);
-
-            const handleDelete = (id) => {
-                if (confirm('Delete this room?')) {
-                    dbService.deleteRoom(id);
-                    setRooms(dbService.getRooms());
-                }
-            };
+        const HomeView = ({ user, setView, setActiveRoom }) => {
+            const [rooms, setRooms] = useState([]);
+            useEffect(() => {
+                const ref = db.ref('rooms');
+                ref.on('value', (snap) => {
+                    const data = snap.val();
+                    const list = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
+                    setRooms(list.sort((a,b) => (b.isOfficial?1:0) - (a.isOfficial?1:0)));
+                });
+                return () => ref.off();
+            }, []);
 
             return (
                 <div className="p-6 space-y-6">
                     <div className="glass p-5 rounded-3xl flex items-center justify-between border-blue-500/20">
                         <div className="flex items-center gap-4">
-                            <div className="w-11 h-11 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><i className="fas fa-gift"></i></div>
-                            <div><h4 className="text-sm font-bold">Daily Reward</h4><p className="text-[10px] text-slate-500">Collect your free coin</p></div>
+                            <div className="w-11 h-11 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 animate-pulse"><i className="fas fa-gift"></i></div>
+                            <div><h4 className="text-sm font-bold">Daily Coin</h4><p className="text-[10px] text-slate-500">Free reward every 24h</p></div>
                         </div>
-                        <button onClick={() => {
+                        <button onClick={async () => {
                             const now = Date.now();
-                            if (now - (user.lastBonus || 0) < 86400000 && !user.isAdmin) return alert('Available tomorrow');
-                            const u = dbService.updateUser(user.uid, { coins: user.coins + 1, lastBonus: now });
-                            setUser(u); alert('1 Coin added!');
+                            if (now - (user?.lastBonus || 0) < 86400000 && !user?.isAdmin) return alert('Wait for tomorrow!');
+                            await db.ref(`users/${user.uid}`).update({ coins: (user?.coins || 0) + 1, lastBonus: now });
+                            alert('1 Coin added!');
                         }} className="bg-blue-600 px-4 py-2 rounded-xl text-xs font-bold">Claim</button>
                     </div>
                     <div className="flex justify-between items-center">
@@ -273,17 +253,18 @@
                     <div className="grid gap-3">
                         {rooms.map(room => (
                             <div key={room.id} className={`glass p-3 rounded-2xl flex items-center gap-4 group ${room.isOfficial ? 'premium-border' : ''}`}>
-                                <div onClick={() => { setActiveRoom(room); setView('chat'); }} className="flex-1 flex items-center gap-4 cursor-pointer">
-                                    <img src={room.photoURL} className="w-12 h-12 rounded-xl object-cover" />
+                                <div onClick={() => { 
+                                    if(room.isOfficial && !user?.isAdmin) return alert('Admin Access Only');
+                                    setActiveRoom(room); setView('chat'); 
+                                }} className="flex-1 flex items-center gap-4 cursor-pointer">
+                                    <img src={room.photoURL || 'https://picsum.photos/seed/'+room.id+'/200'} className="w-12 h-12 rounded-xl object-cover" />
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-sm truncate flex items-center gap-1">
-                                            {room.name} {room.isOfficial && <i className="fas fa-certificate text-blue-400 text-[10px]"></i>}
-                                        </h4>
+                                        <h4 className="font-bold text-sm truncate">{room.name} {room.isOfficial && <i className="fas fa-certificate text-blue-400 text-[10px]"></i>}</h4>
                                         <p className="text-[10px] text-slate-500 truncate">{room.description}</p>
                                     </div>
                                 </div>
-                                {user.isAdmin && !room.isOfficial && (
-                                    <button onClick={() => handleDelete(room.id)} className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all"><i className="fas fa-trash-alt text-xs"></i></button>
+                                {user?.isAdmin && !room.isOfficial && (
+                                    <button onClick={() => { if(confirm('Delete this room?')) db.ref(`rooms/${room.id}`).remove(); }} className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all"><i className="fas fa-trash-alt text-xs"></i></button>
                                 )}
                             </div>
                         ))}
@@ -298,25 +279,27 @@
             const scroll = useRef();
 
             useEffect(() => {
-                const i = setInterval(() => setMsgs(getDb().messages[room.id] || []), 1000);
-                return () => clearInterval(i);
+                const ref = db.ref(`messages/${room.id}`).limitToLast(100);
+                ref.on('value', (snap) => {
+                    const data = snap.val();
+                    setMsgs(data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : []);
+                });
+                return () => ref.off();
             }, [room.id]);
 
             useEffect(() => { if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight; }, [msgs]);
 
             const send = () => {
                 if (!input.trim()) return;
-                const db = getDb();
-                const m = { id: Math.random().toString(36).substring(7), senderId: user.uid, senderName: user.displayName, senderPhoto: user.photoURL, content: input, isPremium: user.isPremium, timestamp: Date.now() };
-                db.messages[room.id].push(m);
-                saveDb(db);
+                db.ref(`messages/${room.id}`).push({
+                    senderId: user?.uid,
+                    senderName: user?.displayName,
+                    senderPhoto: user?.photoURL,
+                    content: input,
+                    isPremium: user?.isPremium,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
                 setInput('');
-            };
-
-            const delMsg = (mid) => {
-                if (confirm('Delete this message?')) {
-                    dbService.deleteMessage(room.id, mid);
-                }
             };
 
             return (
@@ -324,21 +307,21 @@
                     <header className="h-16 glass flex items-center justify-between px-4 shrink-0 border-b border-white/5">
                         <div className="flex items-center gap-3">
                             <button onClick={onBack} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center"><i className="fas fa-arrow-left"></i></button>
-                            <img src={room.photoURL} className="w-10 h-10 rounded-xl object-cover" />
+                            <img src={room.photoURL || 'https://picsum.photos/seed/'+room.id+'/200'} className="w-10 h-10 rounded-xl object-cover" />
                             <h4 className="font-bold text-sm truncate max-w-[150px]">{room.name}</h4>
                         </div>
                     </header>
                     <div ref={scroll} className="flex-1 overflow-y-auto p-5 space-y-4 chat-scroll">
                         {msgs.map(m => (
-                            <div key={m.id} className={`flex gap-3 group ${m.senderId === user.uid ? 'flex-row-reverse' : ''}`}>
-                                <div className={`max-w-[80%] flex flex-col ${m.senderId === user.uid ? 'items-end' : 'items-start'}`}>
+                            <div key={m.id} className={`flex gap-3 group ${m.senderId === user?.uid ? 'flex-row-reverse' : ''}`}>
+                                <div className={`max-w-[80%] flex flex-col ${m.senderId === user?.uid ? 'items-end' : 'items-start'}`}>
                                     <div className="flex items-center gap-1 mb-1">
                                         <span className="text-[9px] font-bold text-slate-500">{m.senderName}</span>
                                         {m.isPremium && <i className="fas fa-circle-check text-blue-400 text-[8px]"></i>}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        {user.isAdmin && <button onClick={() => delMsg(m.id)} className="w-6 h-6 rounded bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100"><i className="fas fa-trash text-[8px]"></i></button>}
-                                        <div className={`p-3 rounded-2xl text-sm ${m.senderId === user.uid ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-900 text-slate-200 rounded-tl-none border border-white/5'}`}>
+                                        {user?.isAdmin && <button onClick={() => {if(confirm('Delete message?')) db.ref(`messages/${room.id}/${m.id}`).remove(); }} className="w-6 h-6 rounded bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all"><i className="fas fa-trash text-[8px]"></i></button>}
+                                        <div className={`p-3 rounded-2xl text-sm ${m.senderId === user?.uid ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-900 text-slate-200 rounded-tl-none border border-white/5'}`}>
                                             {m.content}
                                         </div>
                                     </div>
@@ -347,32 +330,32 @@
                         ))}
                     </div>
                     <div className="p-4 glass flex items-center gap-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-                        <input className="flex-1 h-12 bg-slate-900 rounded-2xl px-5 outline-none text-white text-sm" placeholder="Message..." value={input} onChange={x=>setInput(x.target.value)} onKeyDown={x=>x.key==='Enter'&&send()} />
+                        <input className="flex-1 h-12 bg-slate-900 rounded-2xl px-5 outline-none text-white text-sm" placeholder="Type a message..." value={input} onChange={x=>setInput(x.target.value)} onKeyDown={x=>x.key==='Enter'&&send()} />
                         <button onClick={send} className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg active:scale-90 transition-all"><i className="fas fa-paper-plane text-white transform -rotate-45"></i></button>
                     </div>
                 </div>
             );
         };
 
-        const StoreView = ({ user, setUser }) => (
+        const StoreView = ({ user }) => (
             <div className="p-6 space-y-6">
                 <div className="glass p-6 rounded-[2.5rem] premium-border text-center">
                     <i className="fas fa-crown text-4xl text-blue-400 mb-4 block animate-bounce"></i>
-                    <h3 className="text-xl font-bold">Premium Status</h3>
-                    <p className="text-[10px] text-slate-500 mt-2 mb-6">Blue badge + Blue chat bubble + 1,000 gift coins.</p>
-                    <button onClick={() => {
-                        if (user.isPremium) return alert('Already active');
-                        if (user.coins < PREMIUM_COST) return alert('Not enough coins');
-                        const u = dbService.updateUser(user.uid, { coins: user.coins - PREMIUM_COST + 1000, isPremium: true });
-                        setUser(u); alert('Premium activated!');
-                    }} className="w-full h-14 bg-blue-600 rounded-2xl font-bold uppercase tracking-widest">{user.isPremium ? 'ACTIVE' : PREMIUM_COST + ' COINS'}</button>
+                    <h3 className="text-xl font-bold">Premium Membership</h3>
+                    <p className="text-[10px] text-slate-500 mt-2 mb-6">Verified Badge + Blue Chat + 1,000 Coin Gift</p>
+                    <button onClick={async () => {
+                        if (user?.isPremium) return alert('Already Premium');
+                        if ((user?.coins || 0) < PREMIUM_COST) return alert('Insufficient coins');
+                        await db.ref(`users/${user.uid}`).update({ coins: user.coins - PREMIUM_COST + 1000, isPremium: true });
+                        alert('Premium Activated Successfully!');
+                    }} className="w-full h-14 bg-blue-600 rounded-2xl font-bold uppercase tracking-widest">{user?.isPremium ? 'ACTIVE' : PREMIUM_COST + ' COINS'}</button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     {[1000, 5000, 10000, 50000].map(c => (
-                        <button key={c} onClick={() => window.open(TELEGRAM)} className="glass p-5 rounded-3xl flex flex-col items-center gap-3 active:scale-95 transition-all">
+                        <button key={c} onClick={() => window.open(TELEGRAM)} className="glass p-5 rounded-3xl flex flex-col items-center gap-2 active:scale-95 transition-all">
                             <i className="fas fa-coins text-yellow-500"></i>
                             <span className="font-bold text-sm">{c.toLocaleString()}</span>
-                            <span className="text-[9px] text-blue-500 font-bold tracking-tighter">IQD {c.toLocaleString()}</span>
+                            <span className="text-[9px] text-blue-500 font-bold uppercase">IQD {c.toLocaleString()}</span>
                         </button>
                     ))}
                 </div>
@@ -380,50 +363,49 @@
         );
 
         const NotifView = ({ isAdmin }) => {
-            const [notifs, setNotifs] = useState(getDb().notifications);
-            useEffect(() => { const i = setInterval(() => setNotifs(getDb().notifications), 2000); return () => clearInterval(i); }, []);
-
-            const delNotif = (id) => {
-                if (confirm('Delete notification?')) {
-                    dbService.deleteNotification(id);
-                    setNotifs(getDb().notifications);
-                }
-            };
+            const [notifs, setNotifs] = useState([]);
+            useEffect(() => {
+                const ref = db.ref('notifications');
+                ref.on('value', (snap) => {
+                    const data = snap.val();
+                    const list = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
+                    setNotifs(list.reverse());
+                });
+                return () => ref.off();
+            }, []);
 
             return (
                 <div className="p-6 space-y-6">
                     <h3 className="text-xl font-extrabold uppercase tracking-tight">System Alerts</h3>
-                    {notifs.length === 0 ? <p className="text-center py-20 text-slate-700 font-bold uppercase text-[10px] tracking-widest">No new notifications</p> : 
+                    {notifs.length === 0 ? <div className="text-center py-20 text-slate-700 font-bold text-xs uppercase tracking-widest">No alerts yet</div> : 
                     notifs.map(n => (
-                        <div key={n.id} className="glass p-5 rounded-3xl border-l-4 border-blue-500 group flex justify-between items-start">
-                            <div className="flex-1">
-                                <h4 className="font-bold text-sm text-blue-400 mb-1">{n.title}</h4>
-                                <p className="text-xs text-slate-400 leading-relaxed">{n.message}</p>
-                            </div>
-                            {isAdmin && <button onClick={() => delNotif(n.id)} className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all ml-4"><i className="fas fa-trash-alt text-[10px]"></i></button>}
+                        <div key={n.id} className="glass p-5 rounded-3xl border-l-4 border-blue-500 group flex justify-between">
+                            <div className="flex-1"><h4 className="font-bold text-sm text-blue-400 mb-1">{n.title}</h4><p className="text-xs text-slate-400">{n.message}</p></div>
+                            {isAdmin && <button onClick={() => { if(confirm('Delete notification?')) db.ref(`notifications/${n.id}`).remove(); }} className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all ml-4"><i className="fas fa-trash-alt text-[10px]"></i></button>}
                         </div>
                     ))}
                 </div>
             );
         };
 
-        const ProfileView = ({ user, setUser, setView }) => {
-            const [n, setN] = useState(user.displayName);
-            const [p, setP] = useState(user.password);
+        const ProfileView = ({ user }) => {
+            const [name, setName] = useState(user?.displayName || '');
             return (
-                <div className="p-10 flex flex-col items-center">
-                    <div className="relative mb-8">
-                        <img src={user.photoURL} className="w-28 h-28 rounded-[2.5rem] border-4 border-slate-900 shadow-2xl" />
-                        {user.isPremium && <i className="fas fa-circle-check absolute -bottom-1 -right-1 text-2xl text-blue-400 bg-slate-950 rounded-full"></i>}
+                <div className="p-10 flex flex-col items-center gap-8">
+                    <div className="relative">
+                        <img src={user?.photoURL} className="w-28 h-28 rounded-[2.5rem] border-4 border-slate-900 shadow-2xl" />
+                        {user?.isPremium && <i className="fas fa-circle-check absolute -bottom-1 -right-1 text-2xl text-blue-400 bg-slate-950 rounded-full"></i>}
                     </div>
                     <div className="w-full space-y-4">
-                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5" value={n} onChange={x=>setN(x.target.value)} placeholder="Display Name" />
-                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5" type="password" value={p} onChange={x=>setP(x.target.value)} placeholder="New Password" />
-                        <button onClick={() => {
-                            const u = dbService.updateUser(user.uid, { displayName: n, password: p, photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${n}` });
-                            setUser(u); alert('Profile updated');
-                        }} className="w-full h-14 bg-blue-600 rounded-2xl font-bold">Save Changes</button>
-                        <button onClick={() => { localStorage.clear(); location.reload(); }} className="w-full h-14 bg-red-500/10 text-red-500 rounded-2xl font-bold mt-10">Sign Out</button>
+                        <div className="bg-slate-900 rounded-2xl p-6 border border-white/5">
+                            <label className="text-[10px] text-slate-500 font-bold uppercase block mb-2">Display Name</label>
+                            <input className="w-full bg-transparent outline-none text-white font-bold" value={name} onChange={x=>setName(x.target.value)} />
+                        </div>
+                        <button onClick={async () => {
+                            await db.ref(`users/${user.uid}`).update({ displayName: name, photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}` });
+                            alert('Profile Saved');
+                        }} className="w-full h-14 bg-blue-600 rounded-2xl font-bold">Update Profile</button>
+                        <button onClick={() => { auth.signOut(); location.reload(); }} className="w-full h-14 bg-red-500/10 text-red-500 rounded-2xl font-bold mt-10 border border-red-500/20">Sign Out</button>
                     </div>
                 </div>
             );
@@ -432,54 +414,49 @@
         const AdminView = ({ setTab }) => {
             const [t, setT] = useState('');
             const [m, setM] = useState('');
-            const send = () => {
-                if (!t || !m) return alert('Empty fields');
-                if (!confirm('Broadcast this to ALL users?')) return;
-                const db = getDb();
-                db.notifications.unshift({ id: Date.now(), title: t, message: m, time: Date.now() });
-                saveDb(db);
-                setT(''); setM('');
-                alert('Broadcast Success');
-                setTab('notif');
+            const send = async () => {
+                if (!t || !m) return alert('Fill all fields');
+                if (!confirm('Send broadcast to ALL users?')) return;
+                await db.ref('notifications').push({ title: t, message: m, timestamp: Date.now() });
+                setT(''); setM(''); alert('Broadcast Sent'); setTab('notif');
             };
             return (
                 <div className="p-8 space-y-6">
-                    <div className="flex items-center gap-4 text-red-500">
-                        <i className="fas fa-shield-halved text-2xl"></i>
-                        <h2 className="text-2xl font-black uppercase italic">Admin Panel</h2>
-                    </div>
+                    <h2 className="text-2xl font-black text-red-500 uppercase italic flex items-center gap-3"><i className="fas fa-shield-halved"></i> Admin Panel</h2>
                     <div className="space-y-4">
                         <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5" placeholder="Alert Title" value={t} onChange={x=>setT(x.target.value)} />
-                        <textarea className="w-full h-40 bg-slate-900 rounded-2xl px-6 py-4 outline-none text-white border border-white/5 resize-none" placeholder="Alert Content..." value={m} onChange={x=>setM(x.target.value)} />
-                        <button onClick={send} className="w-full h-14 bg-red-600 rounded-2xl font-black shadow-xl shadow-red-900/10">SEND BROADCAST</button>
+                        <textarea className="w-full h-40 bg-slate-900 rounded-2xl px-6 py-4 outline-none text-white border border-white/5 resize-none" placeholder="Alert message details..." value={m} onChange={x=>setM(x.target.value)} />
+                        <button onClick={send} className="w-full h-14 bg-red-600 rounded-2xl font-black shadow-xl shadow-red-900/20 active:scale-95 transition-all">SEND BROADCAST</button>
                     </div>
                 </div>
             );
         };
 
-        const CreateRoomView = ({ user, setUser, setView }) => {
+        const CreateRoomView = ({ user, setView }) => {
             const [n, setN] = useState('');
             const [d, setD] = useState('');
             return (
                 <div className="fixed inset-0 bg-slate-950 z-[150] p-10 flex flex-col">
                     <button onClick={() => setView('main')} className="w-12 h-12 rounded-full glass mb-8 flex items-center justify-center"><i className="fas fa-times"></i></button>
-                    <h2 className="text-3xl font-bold mb-8">New Room</h2>
+                    <h2 className="text-3xl font-bold mb-8">New Global Room</h2>
                     <div className="space-y-4">
-                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5" placeholder="Room Name" onChange={x=>setN(x.target.value)} />
-                        <textarea className="w-full h-40 bg-slate-900 rounded-2xl px-6 py-4 outline-none text-white border border-white/5 resize-none" placeholder="Description..." onChange={x=>setD(x.target.value)} />
+                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5 focus:border-blue-500/50" placeholder="Room Name" onChange={x=>setN(x.target.value)} />
+                        <textarea className="w-full h-40 bg-slate-900 rounded-2xl px-6 py-4 outline-none text-white resize-none focus:border-blue-500/50" placeholder="Describe your room..." onChange={x=>setD(x.target.value)} />
                         <div className="p-4 glass rounded-2xl flex justify-between items-center">
                             <span className="text-xs text-slate-500 uppercase font-bold tracking-widest">Creation Cost</span>
-                            <span className="text-sm font-black text-yellow-500">{user.isAdmin ? 'FREE' : ROOM_COST + ' COINS'}</span>
+                            <span className="text-sm font-black text-yellow-500">{user?.isAdmin ? 'FREE' : ROOM_COST + ' COINS'}</span>
                         </div>
-                        <button onClick={() => {
-                            if (user.coins < ROOM_COST && !user.isAdmin) return alert('Low coins');
-                            dbService.createRoom(user.uid, n, d);
-                            if (!user.isAdmin) {
-                                const u = dbService.updateUser(user.uid, { coins: user.coins - ROOM_COST });
-                                setUser(u);
-                            }
+                        <button onClick={async () => {
+                            if (!user?.isAdmin && (user?.coins || 0) < ROOM_COST) return alert('Not enough coins');
+                            const roomRef = db.ref('rooms').push();
+                            await roomRef.set({
+                                id: roomRef.key, name: n, description: d, 
+                                ownerId: user?.uid, photoURL: `https://picsum.photos/seed/${roomRef.key}/400/300`, 
+                                createdAt: firebase.database.ServerValue.TIMESTAMP
+                            });
+                            if (!user?.isAdmin) await db.ref(`users/${user.uid}`).update({ coins: user.coins - ROOM_COST });
                             setView('main');
-                        }} className="w-full h-14 bg-blue-600 rounded-2xl font-bold">Create Room</button>
+                        }} className="w-full h-14 bg-blue-600 rounded-2xl font-bold shadow-lg shadow-blue-900/10">Launch Room</button>
                     </div>
                 </div>
             );
