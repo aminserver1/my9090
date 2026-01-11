@@ -83,62 +83,58 @@
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        button { transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; }
-        button:active { transform: scale(0.94); opacity: 0.8; }
-        
         .delete-btn {
             background: rgba(239, 68, 68, 0.15);
             color: #ef4444;
-            border-radius: 12px;
-            width: 40px;
-            height: 40px;
+            border-radius: 8px;
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 50;
+            font-size: 10px;
         }
 
         .rtl { direction: rtl; }
         .ltr { direction: ltr; }
 
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        .notif-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ef4444;
-            color: white;
-            font-size: 9px;
-            font-weight: 800;
-            min-width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid #020617;
-            padding: 0 4px;
-        }
-
         .online-dot {
             position: absolute;
-            bottom: 6px;
-            right: 6px;
-            width: 12px;
-            height: 12px;
+            bottom: 2px;
+            right: 2px;
+            width: 10px;
+            height: 10px;
             background: #22c55e;
             border-radius: 50%;
             border: 2px solid #020617;
-            box-shadow: 0 0 8px #22c55e;
-            animation: pulse-green 2s infinite;
+            box-shadow: 0 0 5px #22c55e;
         }
 
-        @keyframes pulse-green {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        .img-msg-container {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.3);
+            max-width: 220px;
+        }
+
+        .voice-wave {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            height: 15px;
+        }
+        .voice-bar {
+            width: 2px;
+            height: 8px;
+            background: #3b82f6;
+            border-radius: 1px;
+            animation: vwave 1s infinite ease-in-out;
+        }
+        @keyframes vwave {
+            0%, 100% { height: 6px; }
+            50% { height: 14px; }
         }
     </style>
 <script type="importmap">
@@ -173,48 +169,24 @@
         const db = firebase.database();
 
         const ADMIN_EMAIL = 'kuchat60111@gmail.com';
-        const PREMIUM_COST = 10000;
         const TELEGRAM = 'https://t.me/Anatoly_Programmer601';
 
         const i18n = {
             en: {
-                rooms: "Rooms", alerts: "Alerts", shop: "Shop", me: "Profile",
-                dailyReward: "Daily Reward", ready: "Ready", claim: "Claim", wait: "Wait",
-                globalRooms: "Global Rooms", createRoom: "Create Room",
-                placeholder: "Type message...", premiumTitle: "Premium Status",
-                premiumDesc: "Verified + 5 Free Rooms + 1K Bonus",
-                signout: "Logout", update: "Save Changes", settings: "Settings", lang: "Language",
-                cost: "Creation Cost", free: "Free", launch: "Launch",
-                namePh: "Room Name", descPh: "Description...",
-                delConf: "Delete permanently?", back: "Back", adminPanel: "Admin Panel",
-                editProfile: "Edit Profile", bioPh: "Bio (max 60 chars)",
-                photoPh: "Photo URL", nameLabel: "Name", roomImgPh: "Room Image URL"
+                rooms: "Rooms", shop: "Store", profile: "Profile",
+                search: "Search rooms...", create: "Create Room",
+                placeholder: "Type message...", edit: "Edit",
+                delMsg: "Delete message?", bio: "Bio", update: "Save Changes",
+                coins: "Coins", cost: "Cost", name: "Name",
+                editGroup: "Edit Group", groupName: "Group Name", groupBio: "Group Bio"
             },
             ku: {
-                rooms: "ڕوومەکان", alerts: "ئاگاداری", shop: "کۆگا", me: "پڕۆفایل",
-                dailyReward: "خەڵاتی ڕۆژانە", ready: "ئامادەیە", claim: "وەرگرتن", wait: "چاوەڕوانبە",
-                globalRooms: "ڕوومە گشتییەکان", createRoom: "دروستکردن",
-                placeholder: "نامە بنوسە...", premiumTitle: "ئەندامی پریمیم",
-                premiumDesc: "سەحی شین + ٥ گرووپی خۆڕایی + ١٠٠٠ کۆین",
-                signout: "چوونە دەرەوە", update: "پاشەکەوت", settings: "ڕێکستنەکان", lang: "زمان",
-                cost: "تێچووی دروستکردن", free: "خۆڕایی", launch: "دروستکردن",
-                namePh: "ناوی ڕووم", descPh: "دەربارەی ڕووم...",
-                delConf: "دڵنیای لە سڕینەوە؟", back: "گەڕانەوە", adminPanel: "ئەدمین پەنێڵ",
-                editProfile: "دەستکاری پڕۆفایل", bioPh: "بایۆ (زۆرترین ٦٠ پیت)",
-                photoPh: "لێنکی وێنەی پڕۆفایل", nameLabel: "ناو", roomImgPh: "لێنکی وێنەی ڕووم"
-            },
-            ar: {
-                rooms: "الغرف", alerts: "التنبيهات", shop: "المتجر", me: "الحساب",
-                dailyReward: "المكافأة اليومية", ready: "جاهز", claim: "استلام", wait: "انتظر",
-                globalRooms: "الغرف العالمية", createRoom: "إنشاء",
-                placeholder: "اكتب رسالة...", premiumTitle: "عضوية بريميوم",
-                premiumDesc: "توثيق + ٥ غرف مجانية + ١٠٠٠ قطعة",
-                signout: "خروج", update: "حفظ التغييرات", settings: "الإعدادات", lang: "اللغة",
-                cost: "تكلفة الإنشاء", free: "مجاني", launch: "إطلاق",
-                namePh: "اسم الغرفة", descPh: "الوصف...",
-                delConf: "هل أنت متأكد من الحذف؟", back: "رجوع", adminPanel: "لوحة التحكم",
-                editProfile: "تعديل الملف", bioPh: "نبذة (ماكس ٦٠ حرف)",
-                photoPh: "رابط الصورة", nameLabel: "الاسم", roomImgPh: "رابط صورة الغرفة"
+                rooms: "ڕوومەکان", shop: "کۆگا", profile: "پڕۆفایل",
+                search: "بگەڕێ بۆ ڕووم...", create: "دروستکردن",
+                placeholder: "نامە بنوسە...", edit: "دەستکاری",
+                delMsg: "نامەکە دەسڕیتەوە؟", bio: "بایۆ", update: "پاشەکەوت",
+                coins: "کۆین", cost: "تێچوو", name: "ناو",
+                editGroup: "دەستکاری گرووپ", groupName: "ناوی گرووپ", groupBio: "بایۆی گرووپ"
             }
         };
 
@@ -223,20 +195,15 @@
             const [user, setUser] = useState(null);
             const [tab, setTab] = useState('home');
             const [activeRoom, setActiveRoom] = useState(null);
-            const [lang, setLang] = useState('en');
-            const [notifCount, setNotifCount] = useState(0);
+            const [lang, setLang] = useState('ku');
 
             useEffect(() => {
-                const unsub = auth.onAuthStateChanged(async (u) => {
+                const unsub = auth.onAuthStateChanged((u) => {
                     if (u) {
-                        db.ref(`users/${u.uid}`).on('value', (snap) => {
+                        db.ref(`users/${u.uid}`).on('value', snap => {
                             const data = snap.val();
-                            if (data) {
-                                setUser({ ...data, uid: u.uid });
-                                if (data.lang) setLang(data.lang);
-                            }
+                            if (data) setUser({ ...data, uid: u.uid });
                         });
-                        db.ref('notifications').on('value', snap => setNotifCount(snap.numChildren()));
                         setView('main');
                     } else {
                         setTimeout(() => setView('auth'), 2000);
@@ -244,24 +211,6 @@
                 });
                 return () => unsub();
             }, []);
-
-            const t = i18n[lang];
-
-            const handleAuth = async (email, name, pass, isReg) => {
-                try {
-                    if (isReg) {
-                        const res = await auth.createUserWithEmailAndPassword(email.trim().toLowerCase(), pass);
-                        const isAdmin = email.trim().toLowerCase() === ADMIN_EMAIL;
-                        await db.ref(`users/${res.user.uid}`).set({
-                            displayName: name, email: email.toLowerCase(), coins: isAdmin ? 999999 : 50,
-                            isPremium: isAdmin, isAdmin: isAdmin, photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
-                            roomsCreatedCount: 0, lang: 'en', lastBonus: 0, bio: ''
-                        });
-                    } else {
-                        await auth.signInWithEmailAndPassword(email.trim().toLowerCase(), pass);
-                    }
-                } catch (e) { alert(e.message); }
-            };
 
             if (view === 'splash') return (
                 <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-950">
@@ -272,76 +221,60 @@
                 </div>
             );
 
-            if (view === 'auth') return <AuthScreen onAuth={handleAuth} />;
+            if (view === 'auth') return <AuthScreen onAuth={(e, n, p, isReg) => {
+                if(isReg) auth.createUserWithEmailAndPassword(e, p).then(r => db.ref(`users/${r.user.uid}`).set({
+                    displayName: n, photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${n}`,
+                    coins: 100, roomsCreatedCount: 0, bio: ''
+                }));
+                else auth.signInWithEmailAndPassword(e, p);
+            }} />;
+
+            const t = i18n[lang];
 
             return (
-                <div className={`h-full max-w-md mx-auto bg-slate-950 flex flex-col relative border-x border-slate-900 shadow-2xl overflow-hidden ${lang === 'en' ? 'ltr' : 'rtl'}`}>
-                    <header className="h-20 glass flex items-center justify-between px-6 z-20 border-b border-white/5 shrink-0 safe-top">
+                <div className={`h-full max-w-md mx-auto bg-slate-950 flex flex-col relative ${lang === 'ku' ? 'rtl' : 'ltr'}`}>
+                    <header className="h-16 glass flex items-center justify-between px-6 z-20 shrink-0 safe-top border-b border-white/5">
                         <h1 className="text-xl font-bold animate-shimmer">KUCHAT</h1>
-                        <div className="flex items-center gap-3">
-                            {user?.isAdmin && <button onClick={() => setTab('admin')} className="w-9 h-9 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center"><i className="fas fa-shield-halved text-xs"></i></button>}
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => setTab('notif')} className="relative w-10 h-10 flex items-center justify-center bg-slate-900 rounded-full border border-white/10">
-                                    <i className="fas fa-bell text-slate-400"></i>
-                                    {notifCount > 0 && <span className="notif-badge">{notifCount}</span>}
-                                </button>
-                                <div className="bg-slate-900/80 px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10">
-                                    <i className="fas fa-coins text-yellow-500 text-xs"></i>
-                                    <span className="text-xs font-bold">{user?.coins?.toLocaleString()}</span>
-                                </div>
-                            </div>
+                        <div className="bg-slate-900 px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10">
+                            <i className="fas fa-coins text-yellow-500 text-xs"></i>
+                            <span className="text-xs font-bold">{user?.coins || 0}</span>
                         </div>
                     </header>
-                    
-                    <main className="flex-1 overflow-y-auto pb-24 fade-in">
+
+                    <main className="flex-1 overflow-y-auto pb-24">
                         {tab === 'home' && <HomeView user={user} setView={setView} setActiveRoom={setActiveRoom} t={t} />}
-                        {tab === 'notif' && <NotifView user={user} t={t} />}
                         {tab === 'store' && <StoreView user={user} t={t} />}
-                        {tab === 'profile' && <ProfileView user={user} setLang={setLang} lang={lang} setView={setView} t={t} />}
-                        {tab === 'admin' && user?.isAdmin && <AdminView setTab={setTab} t={t} />}
+                        {tab === 'profile' && <ProfileView user={user} setView={setView} t={t} />}
                     </main>
 
-                    <nav className="h-20 glass absolute bottom-0 left-0 right-0 flex items-center justify-around z-20 border-t border-white/5 safe-bottom">
-                        {[
-                            { id: 'home', icon: 'fa-house-user', label: t.rooms },
-                            { id: 'store', icon: 'fa-gem', label: t.shop },
-                            { id: 'profile', icon: 'fa-circle-user', label: t.me }
-                        ].map(item => (
-                            <button key={item.id} onClick={() => setTab(item.id)} className={`flex flex-col items-center gap-1 ${tab === item.id ? 'text-blue-400' : 'text-slate-500'}`}>
-                                <i className={`fas ${item.icon} text-lg`}></i>
-                                <span className="text-[10px] font-bold uppercase tracking-wider">{item.label}</span>
-                            </button>
-                        ))}
+                    <nav className="h-20 glass absolute bottom-0 left-0 right-0 flex items-center justify-around z-20 safe-bottom border-t border-white/5">
+                        <button onClick={() => setTab('home')} className={`flex flex-col items-center gap-1 ${tab === 'home' ? 'text-blue-400' : 'text-slate-500'}`}><i className="fas fa-house"></i><span className="text-[10px] font-bold uppercase">{t.rooms}</span></button>
+                        <button onClick={() => setTab('store')} className={`flex flex-col items-center gap-1 ${tab === 'store' ? 'text-blue-400' : 'text-slate-500'}`}><i className="fas fa-store"></i><span className="text-[10px] font-bold uppercase">{t.shop}</span></button>
+                        <button onClick={() => setTab('profile')} className={`flex flex-col items-center gap-1 ${tab === 'profile' ? 'text-blue-400' : 'text-slate-500'}`}><i className="fas fa-user-circle"></i><span className="text-[10px] font-bold uppercase">{t.profile}</span></button>
                     </nav>
-                    
+
                     {view === 'chat' && activeRoom && <ChatScreen room={activeRoom} user={user} onBack={() => setView('main')} t={t} />}
-                    {view === 'create' && <CreateRoomView user={user} setView={setView} t={t} />}
                     {view === 'edit-profile' && <EditProfileView user={user} setView={setView} t={t} />}
+                    {view === 'create-room' && <CreateRoomView user={user} setView={setView} t={t} />}
+                    {view === 'edit-group' && <EditGroupView room={activeRoom} setView={setView} t={t} />}
                 </div>
             );
         };
 
         const AuthScreen = ({ onAuth }) => {
-            const [reg, setReg] = useState(false);
-            const [e, setE] = useState('');
-            const [n, setN] = useState('');
-            const [p, setP] = useState('');
+            const [isReg, setIsReg] = useState(false);
+            const [email, setEmail] = useState('');
+            const [name, setName] = useState('');
+            const [pass, setPass] = useState('');
             return (
-                <div className="h-screen max-w-md mx-auto bg-slate-950 p-10 flex flex-col justify-center">
-                    <div className="mb-12 text-center">
-                        <div className="w-20 h-20 bg-blue-600 rounded-[1.5rem] mx-auto mb-6 flex items-center justify-center shadow-2xl">
-                            <i className="fas fa-comments text-3xl text-white"></i>
-                        </div>
-                        <h1 className="text-4xl font-extrabold text-white">KUCHAT</h1>
-                    </div>
+                <div className="h-screen bg-slate-950 p-10 flex flex-col justify-center max-w-md mx-auto">
+                    <div className="text-center mb-10"><h2 className="text-4xl font-black mb-2">{isReg ? 'SIGN UP' : 'LOGIN'}</h2><p className="text-slate-500 text-sm">Welcome to Kuchat Global</p></div>
                     <div className="space-y-4">
-                        {reg && <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5" placeholder="Name" onChange={x=>setN(x.target.value)} />}
-                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5" placeholder="Email" onChange={x=>setE(x.target.value)} />
-                        <input type="password" dir="ltr" className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5" placeholder="Password" onChange={x=>setP(x.target.value)} />
-                        <button onClick={() => onAuth(e, n, p, reg)} className="w-full h-14 bg-blue-600 rounded-2xl font-bold text-white shadow-lg active:scale-95 transition-all">
-                            {reg ? 'Register' : 'Login'}
-                        </button>
-                        <button onClick={() => setReg(!reg)} className="w-full text-slate-500 text-xs font-semibold">{reg ? 'Already have an account? Login' : 'Need an account? Sign Up'}</button>
+                        {isReg && <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none border border-white/5" placeholder="Full Name" onChange={x=>setName(x.target.value)} />}
+                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none border border-white/5" placeholder="Email" onChange={x=>setEmail(x.target.value)} />
+                        <input type="password" dir="ltr" className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none border border-white/5" placeholder="Password" onChange={x=>setPass(x.target.value)} />
+                        <button onClick={() => onAuth(email, name, pass, isReg)} className="w-full h-14 bg-blue-600 rounded-2xl font-bold shadow-lg shadow-blue-500/10">SUBMIT</button>
+                        <button onClick={() => setIsReg(!isReg)} className="w-full text-center text-slate-500 text-xs font-bold">{isReg ? 'Already have account? Login' : 'Need account? Sign Up'}</button>
                     </div>
                 </div>
             );
@@ -349,84 +282,29 @@
 
         const HomeView = ({ user, setView, setActiveRoom, t }) => {
             const [rooms, setRooms] = useState([]);
-            const [countdown, setCountdown] = useState("");
-            const [canClaim, setCanClaim] = useState(false);
-
+            const [search, setSearch] = useState('');
             useEffect(() => {
-                const ref = db.ref('rooms');
-                ref.on('value', snap => {
+                db.ref('rooms').on('value', snap => {
                     const data = snap.val();
-                    const list = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
-                    setRooms(list.sort((a,b) => (b.isOfficial?1:0) - (a.isOfficial?1:0)));
+                    setRooms(data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : []);
                 });
-                return () => ref.off();
             }, []);
-
-            useEffect(() => {
-                const interval = setInterval(() => {
-                    if (!user) return;
-                    const diff = Date.now() - (user.lastBonus || 0);
-                    const wait = 24 * 3600000;
-                    if (diff >= wait || user.isAdmin) { setCanClaim(true); setCountdown(""); }
-                    else {
-                        setCanClaim(false);
-                        const rem = wait - diff;
-                        const h = Math.floor(rem / 3600000);
-                        const m = Math.floor((rem % 3600000) / 60000);
-                        const s = Math.floor((rem % 60000) / 1000);
-                        setCountdown(`${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
-                    }
-                }, 1000);
-                return () => clearInterval(interval);
-            }, [user]);
-
+            const filtered = rooms.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
             return (
-                <div className="p-6 space-y-6">
-                    <div className="glass p-5 rounded-3xl flex items-center justify-between border-blue-500/20 shadow-xl">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-11 h-11 rounded-full ${canClaim ? 'bg-blue-500/10 text-blue-500 animate-pulse' : 'bg-slate-800 text-slate-500'} flex items-center justify-center`}>
-                                <i className="fas fa-gift"></i>
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-bold">{t.dailyReward}</h4>
-                                <p className="text-[10px] text-slate-500 font-mono">{canClaim ? t.ready : countdown}</p>
-                            </div>
-                        </div>
-                        <button disabled={!canClaim && !user?.isAdmin} onClick={async () => {
-                            await db.ref(`users/${user.uid}`).update({ coins: (user.coins || 0) + 1, lastBonus: Date.now() });
-                        }} className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${canClaim || user?.isAdmin ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-500 opacity-50'}`}>
-                            {canClaim || user?.isAdmin ? t.claim : t.wait}
-                        </button>
+                <div className="p-5 space-y-6">
+                    <div className="relative">
+                        <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input className="w-full h-12 bg-slate-900 rounded-2xl pl-12 pr-6 outline-none border border-white/5 text-sm" placeholder={t.search} onChange={x=>setSearch(x.target.value)} />
                     </div>
-
                     <div className="flex justify-between items-center">
-                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t.globalRooms}</h3>
-                        <button onClick={() => setView('create')} className="bg-slate-900 border border-white/5 px-4 py-2 rounded-xl text-[10px] font-bold">{t.createRoom}</button>
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t.rooms}</h3>
+                        <button onClick={() => setView('create-room')} className="bg-blue-600 px-4 py-2 rounded-xl text-[10px] font-bold shadow-lg shadow-blue-500/20">{t.create}</button>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4">
-                        {rooms.map(room => (
-                            <div key={room.id} 
-                                 onClick={() => {
-                                     if (room.isOfficial && !user?.isAdmin) return alert('ئەم گروپە تەنها بۆ ئەدمینەکانە');
-                                     setActiveRoom(room); setView('chat'); 
-                                 }}
-                                 className={`glass p-3 rounded-[2rem] flex flex-col items-center gap-2 cursor-pointer transition-all hover:scale-[1.02] border border-white/5 relative ${room.isOfficial ? 'premium-border shadow-blue-500/20 shadow-lg' : ''}`}>
-                                
-                                <div className="relative w-full aspect-square">
-                                    <img src={room.photoURL} className="w-full h-full rounded-[1.8rem] object-cover" />
-                                    <div className="online-dot"></div>
-                                    {room.isOfficial && <i className="fas fa-check-circle absolute top-2 right-2 text-blue-400 bg-slate-950 rounded-full text-xs p-0.5"></i>}
-                                </div>
-                                
-                                <div className="text-center w-full px-2">
-                                    <h4 className="font-extrabold text-xs truncate mb-0.5">{room.name}</h4>
-                                    <p className="text-[9px] text-slate-500 truncate mb-2">{room.description}</p>
-                                </div>
-
-                                {user?.isAdmin && !room.isOfficial && (
-                                    <button onClick={(e) => { e.stopPropagation(); if(confirm(t.delConf)) db.ref(`rooms/${room.id}`).remove(); }} className="absolute -top-1 -left-1 bg-red-500/80 text-white w-7 h-7 rounded-full text-[10px] flex items-center justify-center"><i className="fas fa-trash"></i></button>
-                                )}
+                        {filtered.map(r => (
+                            <div key={r.id} onClick={() => { setActiveRoom(r); setView('chat'); }} className="glass p-3 rounded-[2rem] flex flex-col items-center gap-2 border border-white/5 active:scale-95 transition-all">
+                                <div className="relative w-full aspect-square"><img src={r.photoURL} className="w-full h-full rounded-[1.8rem] object-cover" /></div>
+                                <h4 className="font-extrabold text-xs truncate w-full text-center">{r.name}</h4>
                             </div>
                         ))}
                     </div>
@@ -437,233 +315,226 @@
         const ChatScreen = ({ room, user, onBack, t }) => {
             const [msgs, setMsgs] = useState([]);
             const [input, setInput] = useState('');
+            const [recording, setRecording] = useState(false);
             const scroll = useRef();
+            const mediaRecorder = useRef(null);
+            const audioChunks = useRef([]);
 
             useEffect(() => {
-                const r = db.ref(`messages/${room.id}`).limitToLast(50);
-                r.on('value', snap => {
+                const ref = db.ref(`messages/${room.id}`).limitToLast(100);
+                ref.on('value', snap => {
                     const data = snap.val();
                     setMsgs(data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : []);
                 });
-                return () => r.off();
+                return () => ref.off();
             }, [room.id]);
 
             useEffect(() => { if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight; }, [msgs]);
 
-            const send = () => {
-                if (!input.trim()) return;
-                db.ref(`messages/${room.id}`).push({
-                    senderId: user?.uid, senderName: user?.displayName, senderPhoto: user?.photoURL,
-                    content: input, isPremium: user?.isPremium, timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-                setInput('');
+            const send = (type = 'text', content = null) => {
+                const payload = {
+                    senderId: user.uid, senderName: user.displayName, senderPhoto: user.photoURL,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP, type
+                };
+                if (type === 'text' && input.trim()) payload.content = input.trim();
+                else if (type === 'image') payload.content = content;
+                else if (type === 'voice') payload.content = content;
+                else if (type === 'text' && !input.trim()) return;
+
+                db.ref(`messages/${room.id}`).push(payload);
+                if (type === 'text') setInput('');
+            };
+
+            const startRec = async () => {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder.current = new MediaRecorder(stream);
+                audioChunks.current = [];
+                mediaRecorder.current.ondataavailable = e => audioChunks.current.push(e.data);
+                mediaRecorder.current.onstop = () => {
+                    const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onload = () => send('voice', reader.result);
+                    reader.readAsDataURL(blob);
+                    stream.getTracks().forEach(t => t.stop());
+                };
+                mediaRecorder.current.start();
+                setRecording(true);
             };
 
             return (
                 <div className="fixed inset-0 bg-slate-950 z-[100] flex flex-col h-full overflow-hidden">
                     <header className="h-16 glass flex items-center justify-between px-4 shrink-0 safe-top border-b border-white/5">
                         <div className="flex items-center gap-3">
-                            <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-900"><i className="fas fa-arrow-left"></i></button>
+                            <button onClick={onBack} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center"><i className="fas fa-chevron-right"></i></button>
                             <img src={room.photoURL} className="w-10 h-10 rounded-xl object-cover" />
-                            <h4 className="font-bold text-sm truncate">{room.name}</h4>
+                            <h4 className="font-bold text-sm truncate max-w-[120px]">{room.name}</h4>
                         </div>
+                        {(room.ownerId === user.uid || user.email === ADMIN_EMAIL) && (
+                            <button onClick={() => setView('edit-group')} className="w-9 h-9 rounded-full bg-slate-900 flex items-center justify-center text-slate-500"><i className="fas fa-cog"></i></button>
+                        )}
                     </header>
-                    <div ref={scroll} className="flex-1 overflow-y-auto p-5 space-y-4 chat-scroll">
+
+                    <div ref={scroll} className="flex-1 overflow-y-auto p-4 space-y-6 chat-scroll">
                         {msgs.map(m => (
-                            <div key={m.id} className={`flex gap-3 ${m.senderId === user?.uid ? 'flex-row-reverse' : ''}`}>
-                                <div className={`max-w-[80%] flex flex-col ${m.senderId === user?.uid ? 'items-end' : 'items-start'}`}>
+                            <div key={m.id} className={`flex gap-3 ${m.senderId === user.uid ? 'flex-row-reverse' : ''}`}>
+                                <div className="relative shrink-0 self-end">
+                                    <img src={m.senderPhoto} className="w-8 h-8 rounded-full border border-white/10" />
+                                    <div className="online-dot"></div>
+                                </div>
+                                <div className={`max-w-[75%] flex flex-col ${m.senderId === user.uid ? 'items-end' : 'items-start'}`}>
                                     <span className="text-[9px] font-bold text-slate-500 mb-1">{m.senderName}</span>
-                                    <div className="flex items-center gap-2">
-                                        {user?.isAdmin && <button onClick={() => { if(confirm(t.delConf)) db.ref(`messages/${room.id}/${m.id}`).remove(); }} className="delete-btn h-7 w-7 rounded-lg"><i className="fas fa-trash text-[10px]"></i></button>}
-                                        <div className={`p-3 rounded-2xl text-sm ${m.senderId === user?.uid ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-900 text-slate-200 rounded-tl-none border border-white/5'}`}>{m.content}</div>
+                                    <div className={`p-2.5 rounded-2xl text-[13px] ${m.senderId === user.uid ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-900 text-slate-200 rounded-tl-none border border-white/5'}`}>
+                                        {m.type === 'text' && m.content}
+                                        {m.type === 'image' && <div className="img-msg-container"><img src={m.content} className="w-full rounded-lg" /></div>}
+                                        {m.type === 'voice' && (
+                                            <div className="flex items-center gap-3 min-w-[100px] py-1">
+                                                <button onClick={() => new Audio(m.content).play()} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><i className="fas fa-play text-[10px]"></i></button>
+                                                <div className="voice-wave">{[...Array(5)].map((_,i)=><div key={i} className="voice-bar" style={{animationDelay:`${i*0.2}s`}}></div>)}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1 px-1">
+                                        <span className="text-[8px] text-slate-600">{new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                        {(m.senderId === user.uid || user.email === ADMIN_EMAIL) && (
+                                            <button onClick={() => { if(confirm(t.delMsg)) db.ref(`messages/${room.id}/${m.id}`).remove(); }} className="delete-btn"><i className="fas fa-trash"></i></button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <div className="p-4 glass flex items-center gap-3 safe-bottom border-t border-white/5">
-                        <input className="flex-1 h-12 bg-slate-900 rounded-2xl px-5 outline-none text-white text-sm" placeholder={t.placeholder} value={input} onChange={x=>setInput(x.target.value)} onKeyDown={x=>x.key==='Enter'&&send()} />
-                        <button onClick={send} className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg active:scale-90 transition-all shrink-0"><i className="fas fa-paper-plane text-white transform -rotate-45"></i></button>
+
+                    <div className="p-4 glass flex items-center gap-2 safe-bottom border-t border-white/5">
+                        <label className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-900 cursor-pointer shrink-0 border border-white/5">
+                            <input type="file" className="hidden" accept="image/*" onChange={e => {
+                                const f = e.target.files[0];
+                                if(f) { const r = new FileReader(); r.onload=x=>send('image', x.target.result); r.readAsDataURL(f); }
+                            }} />
+                            <i className="fas fa-image text-slate-400"></i>
+                        </label>
+                        <input className="flex-1 h-11 bg-slate-900 rounded-full px-5 outline-none text-white text-sm" placeholder={t.placeholder} value={input} onChange={x=>setInput(x.target.value)} onKeyDown={x=>x.key==='Enter'&&send()} />
+                        {input.trim() ? (
+                            <button onClick={() => send()} className="w-11 h-11 rounded-full bg-blue-600 flex items-center justify-center"><i className="fas fa-paper-plane text-white text-sm"></i></button>
+                        ) : (
+                            <button onMouseDown={startRec} onMouseUp={() => { mediaRecorder.current?.stop(); setRecording(false); }} onTouchStart={startRec} onTouchEnd={() => { mediaRecorder.current?.stop(); setRecording(false); }} className={`w-11 h-11 rounded-full flex items-center justify-center ${recording ? 'bg-red-500 animate-pulse' : 'bg-slate-800'}`}><i className="fas fa-microphone text-white text-sm"></i></button>
+                        )}
                     </div>
                 </div>
             );
         };
 
-        const ProfileView = ({ user, setLang, lang, setView, t }) => {
-            const [settings, setSettings] = useState(false);
-            if (settings) return (
-                <div className="p-10 space-y-6 fade-in">
-                    <button onClick={() => setSettings(false)} className="w-10 h-10 rounded-full glass flex items-center justify-center mb-4"><i className="fas fa-arrow-left"></i></button>
-                    <h2 className="text-2xl font-bold mb-6">{t.settings}</h2>
-                    <div className="space-y-3">
-                        <p className="text-[10px] text-slate-500 font-bold uppercase px-2">{t.lang}</p>
-                        {['en', 'ku', 'ar'].map(l => (
-                            <button key={l} onClick={async () => { setLang(l); await db.ref(`users/${user.uid}`).update({ lang: l }); }} className={`w-full h-14 rounded-2xl flex items-center justify-between px-6 transition-all ${lang === l ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-white/5'}`}>
-                                <span className="font-bold">{l === 'en' ? 'English' : l === 'ku' ? 'کوردی' : 'العربية'}</span>
-                                {lang === l && <i className="fas fa-check"></i>}
-                            </button>
-                        ))}
-                    </div>
+        const ProfileView = ({ user, setView, t }) => (
+            <div className="p-8 flex flex-col items-center gap-6 text-center">
+                <div className="relative">
+                    <img src={user?.photoURL} className="w-32 h-32 rounded-[2.5rem] border-4 border-slate-900 shadow-2xl object-cover" />
+                    <div className="online-dot w-6 h-6 border-4"></div>
                 </div>
-            );
-            return (
-                <div className="p-8 flex flex-col items-center gap-6 fade-in text-center">
-                    <div className="relative">
-                        <img src={user?.photoURL} className={`w-32 h-32 rounded-[2.5rem] border-4 border-slate-900 shadow-2xl object-cover ${user?.isPremium ? 'ring-2 ring-blue-500' : ''}`} />
-                        {user?.isPremium && <i className="fas fa-certificate absolute -bottom-1 -right-1 text-2xl text-blue-400 bg-slate-950 rounded-full p-0.5 shadow-lg"></i>}
-                    </div>
-                    <div className="w-full">
-                        <h3 className="text-2xl font-bold flex items-center justify-center gap-2">{user?.displayName}</h3>
-                        <p className="text-slate-500 text-xs mt-1 px-4 italic">{user?.bio || "..."}</p>
-                    </div>
-                    <div className="w-full space-y-3 mt-4">
-                        <button onClick={() => setView('edit-profile')} className="w-full h-14 bg-blue-600 rounded-2xl font-bold flex items-center justify-between px-6 shadow-lg shadow-blue-500/10 active:scale-95 transition-all"><span>{t.editProfile}</span><i className="fas fa-user-edit"></i></button>
-                        <button onClick={() => setSettings(true)} className="w-full h-14 bg-slate-900 rounded-2xl font-bold flex items-center justify-between px-6 border border-white/5 active:scale-95 transition-all"><span>{t.settings}</span><i className="fas fa-cog"></i></button>
-                        <button onClick={() => { auth.signOut(); location.reload(); }} className="w-full h-14 bg-red-500/10 text-red-500 rounded-2xl font-bold mt-10 border border-red-500/20 active:scale-95 transition-all">{t.signout}</button>
-                    </div>
+                <div><h3 className="text-2xl font-bold">{user?.displayName}</h3><p className="text-slate-500 text-sm italic mt-1 px-4">{user?.bio || "No bio yet"}</p></div>
+                <div className="w-full space-y-3 pt-4">
+                    <button onClick={() => setView('edit-profile')} className="w-full h-14 bg-blue-600 rounded-2xl font-bold flex items-center justify-between px-6 shadow-lg shadow-blue-500/10 active:scale-95 transition-all"><span>{t.editProfile}</span><i className="fas fa-user-edit"></i></button>
+                    <button onClick={() => { auth.signOut(); location.reload(); }} className="w-full h-14 bg-red-500/10 text-red-500 rounded-2xl font-bold border border-red-500/20 active:scale-95 transition-all">SIGN OUT</button>
                 </div>
-            );
-        };
+            </div>
+        );
 
         const EditProfileView = ({ user, setView, t }) => {
-            const [n, setN] = useState(user?.displayName || '');
-            const [b, setB] = useState(user?.bio || '');
-            const [p, setP] = useState(user?.photoURL || '');
-            const [load, setLoad] = useState(false);
-
-            const save = async () => {
-                setLoad(true);
-                await db.ref(`users/${user.uid}`).update({ displayName: n, bio: b, photoURL: p });
-                setLoad(false);
+            const [n, setN] = useState(user.displayName);
+            const [b, setB] = useState(user.bio || '');
+            const [p, setP] = useState(user.photoURL);
+            const save = () => {
+                db.ref(`users/${user.uid}`).update({ displayName: n, bio: b, photoURL: p });
                 setView('main');
             };
-
             return (
                 <div className="fixed inset-0 bg-slate-950 z-[150] p-8 flex flex-col fade-in overflow-y-auto">
-                    <header className="flex items-center gap-4 mb-8 shrink-0">
-                        <button onClick={() => setView('main')} className="w-10 h-10 rounded-full glass flex items-center justify-center border border-white/5"><i className="fas fa-times"></i></button>
-                        <h2 className="text-2xl font-bold">{t.editProfile}</h2>
-                    </header>
+                    <div className="flex items-center gap-4 mb-8">
+                        <button onClick={() => setView('main')} className="w-10 h-10 rounded-full glass flex items-center justify-center"><i className="fas fa-times"></i></button>
+                        <h2 className="text-xl font-bold">{t.editProfile}</h2>
+                    </div>
                     <div className="space-y-6">
-                        <div className="flex justify-center mb-4"><img src={p} className="w-24 h-24 rounded-3xl object-cover border-4 border-slate-900 shadow-xl" /></div>
-                        <div className="space-y-4">
-                            <div className="bg-slate-900 rounded-2xl p-4 border border-white/5"><label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">{t.nameLabel}</label><input className="w-full bg-transparent outline-none text-white font-bold" value={n} onChange={x=>setN(x.target.value)} /></div>
-                            <div className="bg-slate-900 rounded-2xl p-4 border border-white/5"><label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">{t.bioPh}</label><textarea maxLength="60" className="w-full bg-transparent outline-none text-white text-sm h-20 resize-none" value={b} onChange={x=>setB(x.target.value)} /></div>
-                            <div className="bg-slate-900 rounded-2xl p-4 border border-white/5"><label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">{t.photoPh}</label><input className="w-full bg-transparent outline-none text-white text-xs truncate" value={p} onChange={x=>setP(x.target.value)} /></div>
+                        <div className="flex flex-col items-center gap-4">
+                            <img src={p} className="w-28 h-28 rounded-3xl object-cover border-4 border-slate-900" />
+                            <label className="bg-slate-900 px-4 py-2 rounded-xl text-xs font-bold border border-white/5 cursor-pointer">
+                                SELECT PHOTO <input type="file" className="hidden" accept="image/*" onChange={e=>{
+                                    const f=e.target.files[0]; if(f){ const r=new FileReader(); r.onload=x=>setP(x.target.result); r.readAsDataURL(f); }
+                                }} />
+                            </label>
                         </div>
-                        <button onClick={save} className="w-full h-14 bg-blue-600 rounded-2xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all mt-4 flex items-center justify-center">
-                            {load ? <div className="loader"></div> : t.update}
-                        </button>
+                        <div className="space-y-4 pt-4">
+                            <div className="bg-slate-900 p-4 rounded-2xl border border-white/5"><label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">{t.name}</label><input className="w-full bg-transparent outline-none text-white font-bold" value={n} onChange={x=>setN(x.target.value)} /></div>
+                            <div className="bg-slate-900 p-4 rounded-2xl border border-white/5"><label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">{t.bio}</label><textarea className="w-full bg-transparent outline-none text-white text-sm h-20 resize-none" value={b} onChange={x=>setB(x.target.value)} /></div>
+                        </div>
+                        <button onClick={save} className="w-full h-14 bg-blue-600 rounded-2xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all">{t.update}</button>
                     </div>
                 </div>
             );
         };
 
-        const NotifView = ({ user, t }) => {
-            const [notifs, setNotifs] = useState([]);
-            useEffect(() => {
-                const r = db.ref('notifications');
-                r.on('value', snap => {
-                    const data = snap.val();
-                    setNotifs(data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : []);
-                });
-                return () => r.off();
-            }, []);
+        const EditGroupView = ({ room, setView, t }) => {
+            const [n, setN] = useState(room.name);
+            const [b, setB] = useState(room.description || '');
+            const [p, setP] = useState(room.photoURL);
+            const save = () => {
+                db.ref(`rooms/${room.id}`).update({ name: n, description: b, photoURL: p });
+                setView('main');
+            };
             return (
-                <div className="p-6 space-y-6">
-                    <h3 className="text-xl font-extrabold uppercase">{t.alerts}</h3>
-                    {notifs.map(n => (
-                        <div key={n.id} className="glass p-5 rounded-3xl border-l-4 border-blue-500 flex justify-between items-start">
-                            <div className="flex-1"><h4 className="font-bold text-sm text-blue-400 mb-1">{n.title}</h4><p className="text-xs text-slate-400">{n.message}</p></div>
-                            {user?.isAdmin && <button onClick={() => { if(confirm(t.delConf)) db.ref(`notifications/${n.id}`).remove(); }} className="delete-btn ml-2 h-9 w-9 shrink-0"><i className="fas fa-trash-alt text-[10px]"></i></button>}
-                        </div>
-                    ))}
+                <div className="fixed inset-0 bg-slate-950 z-[150] p-8 flex flex-col fade-in overflow-y-auto">
+                    <div className="flex items-center gap-4 mb-8"><button onClick={() => setView('main')} className="w-10 h-10 rounded-full glass flex items-center justify-center"><i className="fas fa-times"></i></button><h2 className="text-xl font-bold">{t.editGroup}</h2></div>
+                    <div className="space-y-6">
+                        <div className="flex flex-col items-center gap-4"><img src={p} className="w-28 h-28 rounded-3xl object-cover border-4 border-slate-900 shadow-xl" />
+                        <label className="bg-slate-900 px-4 py-2 rounded-xl text-xs font-bold border border-white/5 cursor-pointer">CHANGE PHOTO<input type="file" className="hidden" accept="image/*" onChange={e=>{
+                            const f=e.target.files[0]; if(f){ const r=new FileReader(); r.onload=x=>setP(x.target.result); r.readAsDataURL(f); }
+                        }} /></label></div>
+                        <div className="bg-slate-900 p-4 rounded-2xl border border-white/5"><label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">{t.groupName}</label><input className="w-full bg-transparent outline-none text-white font-bold" value={n} onChange={x=>setN(x.target.value)} /></div>
+                        <div className="bg-slate-900 p-4 rounded-2xl border border-white/5"><label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">{t.groupBio}</label><textarea className="w-full bg-transparent outline-none text-white text-sm h-24 resize-none" value={b} onChange={x=>setB(x.target.value)} /></div>
+                        <button onClick={save} className="w-full h-14 bg-blue-600 rounded-2xl font-bold">{t.update}</button>
+                    </div>
                 </div>
             );
         };
 
         const StoreView = ({ user, t }) => (
             <div className="p-6 space-y-6">
-                <div className="glass p-6 rounded-[2.5rem] premium-border text-center shadow-2xl relative">
-                    <i className="fas fa-crown text-4xl text-blue-400 mb-4 block animate-bounce"></i>
-                    <h3 className="text-xl font-bold">{t.premiumTitle}</h3>
-                    <p className="text-[10px] text-slate-500 mt-2 mb-6">{t.premiumDesc}</p>
-                    <button onClick={async () => {
-                        if (user?.isPremium) return alert('Active');
-                        if (user?.coins < PREMIUM_COST) return alert('No Coins');
-                        await db.ref(`users/${user.uid}`).update({ coins: user.coins - PREMIUM_COST + 1000, isPremium: true });
-                    }} className="w-full h-14 bg-blue-600 rounded-2xl font-bold uppercase active:scale-95 transition-all">{user?.isPremium ? 'ACTIVE' : PREMIUM_COST + ' COINS'}</button>
+                <div className="glass p-8 rounded-[2.5rem] premium-border text-center shadow-2xl relative overflow-hidden">
+                    <i className="fas fa-crown text-5xl text-blue-400 mb-4 block animate-bounce"></i>
+                    <h3 className="text-2xl font-black">PREMIUM</h3>
+                    <p className="text-xs text-slate-500 mt-2 mb-8">Verified Badge + 1000 Bonus Coins</p>
+                    <button onClick={() => window.open(TELEGRAM)} className="w-full h-14 bg-blue-600 rounded-2xl font-bold uppercase shadow-xl shadow-blue-500/20">BUY 10,000 IQD</button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     {[1000, 5000, 10000, 50000].map(c => (
                         <button key={c} onClick={() => window.open(TELEGRAM)} className="glass p-5 rounded-3xl flex flex-col items-center gap-2 active:scale-95 transition-all">
                             <i className="fas fa-coins text-yellow-500"></i>
-                            <span className="font-bold text-sm">{c.toLocaleString()}</span>
-                            <span className="text-[9px] text-blue-500 font-bold uppercase">IQD {c.toLocaleString()}</span>
+                            <span className="font-bold">{c.toLocaleString()}</span>
+                            <span className="text-[9px] text-blue-500 font-bold uppercase">{c.toLocaleString()} IQD</span>
                         </button>
                     ))}
                 </div>
             </div>
         );
 
-        const AdminView = ({ setTab, t }) => {
-            const [ti, setTi] = useState('');
-            const [ms, setMs] = useState('');
-            const send = async () => {
-                if (!ti || !ms) return;
-                await db.ref('notifications').push({ title: ti, message: ms, timestamp: Date.now() });
-                setTab('home');
-            };
-            return (
-                <div className="p-8 space-y-6 fade-in text-left">
-                    <h2 className="text-2xl font-black text-red-500 uppercase flex items-center gap-3"><i className="fas fa-shield-halved"></i> {t.adminPanel}</h2>
-                    <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5" placeholder="Title" onChange={x=>setTi(x.target.value)} />
-                    <textarea className="w-full h-40 bg-slate-900 rounded-2xl px-6 py-4 outline-none text-white border border-white/5 resize-none" placeholder="Message" onChange={x=>setMs(x.target.value)} />
-                    <button onClick={send} className="w-full h-14 bg-red-600 rounded-2xl font-black active:scale-95 transition-all">{t.launch}</button>
-                </div>
-            );
-        };
-
         const CreateRoomView = ({ user, setView, t }) => {
             const [n, setN] = useState('');
-            const [d, setD] = useState('');
-            const [i, setI] = useState('');
-            const count = user?.roomsCreatedCount || 0;
-            const limit = user?.isPremium ? 5 : 2;
-            const isFree = user?.isAdmin || count < limit;
-
+            const [b, setB] = useState('');
+            const [p, setP] = useState('https://picsum.photos/seed/room/400/400');
+            const create = () => {
+                if(!n.trim()) return alert("Name required");
+                const ref = db.ref('rooms').push();
+                ref.set({ id: ref.key, name: n, description: b, ownerId: user.uid, photoURL: p });
+                setView('main');
+            };
             return (
-                <div className="fixed inset-0 bg-slate-950 z-[150] p-10 flex flex-col fade-in overflow-y-auto">
-                    <header className="flex items-center gap-4 mb-8 shrink-0">
-                        <button onClick={() => setView('main')} className="w-12 h-12 rounded-full glass flex items-center justify-center border border-white/5"><i className="fas fa-times"></i></button>
-                        <h2 className="text-3xl font-bold">{t.createRoom}</h2>
-                    </header>
+                <div className="fixed inset-0 bg-slate-950 z-[150] p-8 flex flex-col fade-in">
+                    <div className="flex items-center gap-4 mb-8"><button onClick={() => setView('main')} className="w-10 h-10 rounded-full glass flex items-center justify-center"><i className="fas fa-times"></i></button><h2 className="text-xl font-bold">{t.create}</h2></div>
                     <div className="space-y-4">
-                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5" placeholder={t.namePh} onChange={x=>setN(x.target.value)} />
-                        <textarea className="w-full h-24 bg-slate-900 rounded-2xl px-6 py-4 outline-none text-white resize-none border border-white/5" placeholder={t.descPh} onChange={x=>setD(x.target.value)} />
-                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none text-white border border-white/5 text-xs" placeholder={t.roomImgPh} onChange={x=>setI(x.target.value)} />
-                        <div className="p-4 glass rounded-2xl flex justify-between items-center border border-white/5">
-                            <span className="text-xs text-slate-500 font-bold uppercase">{t.cost}</span>
-                            <span className="text-sm font-black text-yellow-500">{isFree ? t.free : '1000 COINS'}</span>
-                        </div>
-                        <button onClick={async () => {
-                            if (!isFree && (user?.coins || 0) < 1000) return alert('No Coins');
-                            if (!n.trim()) return alert('Name required');
-                            const ref = db.ref('rooms').push();
-                            await ref.set({ 
-                                id: ref.key, 
-                                name: n, 
-                                description: d, 
-                                ownerId: user?.uid, 
-                                photoURL: i || `https://picsum.photos/seed/${ref.key}/400/400`, 
-                                createdAt: firebase.database.ServerValue.TIMESTAMP 
-                            });
-                            await db.ref(`users/${user.uid}`).update({ 
-                                roomsCreatedCount: count + 1, 
-                                coins: isFree ? user.coins : user.coins - 1000 
-                            });
-                            setView('main');
-                        }} className="w-full h-14 bg-blue-600 rounded-2xl font-bold uppercase active:scale-95 transition-all">{t.launch}</button>
+                        <div className="flex flex-col items-center gap-4"><img src={p} className="w-24 h-24 rounded-3xl object-cover" />
+                        <label className="bg-slate-900 px-4 py-2 rounded-xl text-xs font-bold border border-white/5 cursor-pointer">SELECT ROOM PHOTO<input type="file" className="hidden" accept="image/*" onChange={e=>{
+                            const f=e.target.files[0]; if(f){ const r=new FileReader(); r.onload=x=>setP(x.target.result); r.readAsDataURL(f); }
+                        }} /></label></div>
+                        <input className="w-full h-14 bg-slate-900 rounded-2xl px-6 outline-none border border-white/5" placeholder={t.groupName} onChange={x=>setN(x.target.value)} />
+                        <textarea className="w-full h-24 bg-slate-900 rounded-2xl px-6 py-4 outline-none border border-white/5 resize-none" placeholder={t.groupBio} onChange={x=>setB(x.target.value)} />
+                        <button onClick={create} className="w-full h-14 bg-blue-600 rounded-2xl font-bold shadow-lg uppercase">{t.create}</button>
                     </div>
                 </div>
             );
